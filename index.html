@@ -1111,54 +1111,96 @@ function getKategoriIcons() {
 // }
 
 //batas perubahan
-async function tambahKategori() {
-  const nama     = document.getElementById('kat-nama').value.trim();
-  const tipe     = document.getElementById('kat-tipe').value;
-  const ikon     = document.getElementById('kat-ikon').value.trim() || '📌';
-  const warna    = document.getElementById('kat-warna').value;
-  const anggaran = document.getElementById('kat-anggaran').value || 0;
 
-  if (!nama) {
-    showToast('Nama kategori harus diisi.', 'error');
-    return;
-  }
+// Baru
+// async function tambahKategori() {
+//   const nama     = document.getElementById('kat-nama').value.trim();
+//   const tipe     = document.getElementById('kat-tipe').value;
+//   const ikon     = document.getElementById('kat-ikon').value.trim() || '📌';
+//   const warna    = document.getElementById('kat-warna').value;
+//   const anggaran = document.getElementById('kat-anggaran').value || 0;
 
-  try {
+//   if (!nama) {
+//     showToast('Nama kategori harus diisi.', 'error');
+//     return;
+//   }
 
-    const res = await apiPost({
-      action:'addCategory',
-      nama,
-      tipe,
-      ikon,
-      warna,
-      anggaran
-    });
+//   try {
 
-    console.log("Response:", res);
+//     const res = await apiPost({
+//       action:'addCategory',
+//       nama,
+//       tipe,
+//       ikon,
+//       warna,
+//       anggaran
+//     });
 
-    if (res.error) {
-      showToast(res.error,'error');
-      return;
+//     console.log("Response:", res);
+
+//     if (res.error) {
+//       showToast(res.error,'error');
+//       return;
+//     }
+
+//     showToast('Kategori berhasil ditambahkan!','success');
+
+//     loadKategori();
+
+//   } catch(e) {
+
+//     console.error(e);
+
+//     alert(
+//       'ERROR ASLI:\\n\\n' +
+//       e.message
+//     );
+
+//     showToast(
+//       'Gagal menambah kategori.',
+//       'error'
+//     );
+//   }
+// }
+
+
+async function addCategory(categoryData) {
+    showLoading(true);
+    try {
+        // Menggunakan trik text/plain untuk menghindari preflight CORS pada POST request
+        const response = await fetch(API_URL, {
+            method: 'POST', 
+            headers: {
+                'Content-Type': 'text/plain;charset=utf-8'
+            },
+            body: JSON.stringify({
+                action: 'addCategory',
+                ...categoryData
+            })
+        });
+
+        if (!response.ok) throw new Error('Network response was not ok');
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showAlert('Kategori berhasil ditambahkan!', 'success');
+            // Reset form dan tutup modal
+            document.getElementById('formKategori').reset();
+            const modal = bootstrap.Modal.getInstance(document.getElementById('modalKategori'));
+            if (modal) modal.hide();
+            
+            // Refresh data halaman
+            await initApp(); 
+        } else {
+            throw new Error(result.error || 'Gagal menambahkan kategori');
+        }
+    } catch (error) {
+        console.error('Error adding category:', error);
+        showAlert('Gagal menambahkan kategori: ' + error.message, 'danger');
+    } finally {
+        showLoading(false);
     }
-
-    showToast('Kategori berhasil ditambahkan!','success');
-
-    loadKategori();
-
-  } catch(e) {
-
-    console.error(e);
-
-    alert(
-      'ERROR ASLI:\\n\\n' +
-      e.message
-    );
-
-    showToast(
-      'Gagal menambah kategori.',
-      'error'
-    );
-  }
 }
 
 async function initKategoriDefault() {
