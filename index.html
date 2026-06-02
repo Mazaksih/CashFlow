@@ -411,6 +411,9 @@ tbody tr:hover td{background:var(--bg3)}
       <button class="nav-item" onclick="showView('ringkasan',this)">
         <span class="icon">📈</span> Ringkasan Bulanan
       </button>
+      <button class="nav-item" onclick="showView('settings',this)">
+        <span class="icon">⚙️</span> Pengaturan Sistem
+      </button>
     </div>
     <div class="sidebar-footer">
       <div class="sidebar-url" id="sidebar-url-display">Script URL belum diatur</div>
@@ -632,7 +635,32 @@ tbody tr:hover td{background:var(--bg3)}
       </div>
     </div>
 
-  </main>
+  
+    <!-- ── SETTINGS ── -->
+    <div class="view" id="view-settings">
+      <div class="page-header">
+        <h2>Pengaturan Sistem</h2>
+        <p>Kelola konfigurasi aplikasi</p>
+      </div>
+
+      <div class="form-card">
+        <div class="form-title">Google Apps Script Deployment</div>
+
+        <div class="form-group" style="margin-bottom:16px">
+          <label class="form-label">URL Deployment Apps Script</label>
+          <input type="text" class="form-input" id="settings-script-url"
+          placeholder="https://script.google.com/macros/s/..."/>
+        </div>
+
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <button class="btn btn-primary" onclick="saveSettingsUrl()">💾 Simpan URL</button>
+          <button class="btn btn-secondary" onclick="testConnection()">🔗 Test Koneksi</button>
+          <button class="btn btn-secondary" onclick="resetSettingsUrl()">🗑 Hapus URL</button>
+        </div>
+      </div>
+    </div>
+
+</main>
 </div>
 
 <!-- Toast -->
@@ -734,6 +762,7 @@ function showView(name, btn) {
   if (name === 'kategori')   loadKategori();
   if (name === 'ringkasan')  loadRingkasan();
   if (name === 'input')      populateKategoriSelect();
+  if (name === 'settings')   loadSettingsPage();
 }
 
 function toggleSidebar() {
@@ -1116,6 +1145,65 @@ async function loadRingkasan() {
     container.innerHTML = '<div class="empty"><div class="empty-icon">⚠️</div><p>Gagal memuat ringkasan.</p></div>';
   }
 }
+
+
+// ── Settings ─────────────────────────────────────
+function loadSettingsPage() {
+  const el = document.getElementById('settings-script-url');
+  if(el) el.value = localStorage.getItem('cashflow_script_url') || '';
+}
+
+function saveSettingsUrl() {
+  const url = document.getElementById('settings-script-url').value.trim();
+
+  if (!url.startsWith('https://script.google.com')) {
+    showToast('URL Apps Script tidak valid.', 'error');
+    return;
+  }
+
+  SCRIPT_URL = url;
+  localStorage.setItem('cashflow_script_url', url);
+
+  document.getElementById('sidebar-url-display').textContent =
+    url.length > 40 ? url.substring(0,40)+'...' : url;
+
+  showToast('URL deployment berhasil disimpan.', 'success');
+}
+
+function resetSettingsUrl() {
+  if (!confirm('Hapus URL deployment?')) return;
+
+  localStorage.removeItem('cashflow_script_url');
+  SCRIPT_URL = '';
+
+  document.getElementById('settings-script-url').value = '';
+  document.getElementById('sidebar-url-display').textContent =
+    'Script URL belum diatur';
+
+  showToast('URL deployment berhasil dihapus.', 'info');
+}
+
+async function testConnection() {
+  const url = document.getElementById('settings-script-url').value.trim();
+
+  if (!url) {
+    showToast('Masukkan URL terlebih dahulu.', 'error');
+    return;
+  }
+
+  try {
+    const response = await fetch(url + '?action=getDashboard');
+
+    if (response.ok) {
+      showToast('Koneksi berhasil.', 'success');
+    } else {
+      showToast('URL ditemukan tetapi tidak merespons dengan benar.', 'error');
+    }
+  } catch (e) {
+    showToast('Gagal terhubung ke Apps Script.', 'error');
+  }
+}
+
 
 // ── Toast ─────────────────────────────────────────
 let toastTimer;
