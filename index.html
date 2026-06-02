@@ -1090,6 +1090,27 @@ function getKategoriIcons() {
   return map;
 }
 
+// async function tambahKategori() {
+//   const nama     = document.getElementById('kat-nama').value.trim();
+//   const tipe     = document.getElementById('kat-tipe').value;
+//   const ikon     = document.getElementById('kat-ikon').value.trim() || '📌';
+//   const warna    = document.getElementById('kat-warna').value;
+//   const anggaran = document.getElementById('kat-anggaran').value || 0;
+
+//   if (!nama) { showToast('Nama kategori harus diisi.', 'error'); return; }
+
+//   try {
+//     const res = await apiPost({ action:'addCategory', nama, tipe, ikon, warna, anggaran });
+//     if (res.error) { showToast(res.error, 'error'); return; }
+//     showToast('✅ Kategori berhasil ditambahkan!', 'success');
+//     document.getElementById('kat-nama').value = '';
+//     document.getElementById('kat-ikon').value = '';
+//     document.getElementById('kat-anggaran').value = '';
+//     loadKategori();
+//   } catch(e) { showToast('Gagal menambah kategori.', 'error'); }
+// }
+
+//batas perubahan
 async function tambahKategori() {
   const nama     = document.getElementById('kat-nama').value.trim();
   const tipe     = document.getElementById('kat-tipe').value;
@@ -1097,17 +1118,47 @@ async function tambahKategori() {
   const warna    = document.getElementById('kat-warna').value;
   const anggaran = document.getElementById('kat-anggaran').value || 0;
 
-  if (!nama) { showToast('Nama kategori harus diisi.', 'error'); return; }
+  if (!nama) {
+    showToast('Nama kategori harus diisi.', 'error');
+    return;
+  }
 
   try {
-    const res = await apiPost({ action:'addCategory', nama, tipe, ikon, warna, anggaran });
-    if (res.error) { showToast(res.error, 'error'); return; }
-    showToast('✅ Kategori berhasil ditambahkan!', 'success');
-    document.getElementById('kat-nama').value = '';
-    document.getElementById('kat-ikon').value = '';
-    document.getElementById('kat-anggaran').value = '';
+
+    const res = await apiPost({
+      action:'addCategory',
+      nama,
+      tipe,
+      ikon,
+      warna,
+      anggaran
+    });
+
+    console.log("Response:", res);
+
+    if (res.error) {
+      showToast(res.error,'error');
+      return;
+    }
+
+    showToast('Kategori berhasil ditambahkan!','success');
+
     loadKategori();
-  } catch(e) { showToast('Gagal menambah kategori.', 'error'); }
+
+  } catch(e) {
+
+    console.error(e);
+
+    alert(
+      'ERROR ASLI:\\n\\n' +
+      e.message
+    );
+
+    showToast(
+      'Gagal menambah kategori.',
+      'error'
+    );
+  }
 }
 
 async function initKategoriDefault() {
