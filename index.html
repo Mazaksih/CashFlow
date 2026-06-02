@@ -606,7 +606,13 @@ tbody tr:hover td{background:var(--bg3)}
             </div>
           </div>
           <div style="display:flex;gap:10px;margin-top:8px">
-            <button class="btn btn-primary" onclick="tambahKategori()">➕ Tambah Kategori</button>
+            <button class="btn btn-primary" onclick="tambahKategori({
+              nama: document.getElementById('kat-nama').value.trim(),
+              tipe: document.getElementById('kat-tipe').value,
+              ikon: document.getElementById('kat-ikon').value.trim() || '📌',
+              warna: document.getElementById('kat-warna').value,
+              anggaran: document.getElementById('kat-anggaran').value || 0
+            })">➕ Tambah Kategori</button>
             <button class="btn btn-secondary" onclick="initKategoriDefault()">⚡ Init Kategori Default</button>
           </div>
         </div>
@@ -1084,78 +1090,7 @@ function renderKategoriList(list) {
   container.innerHTML = renderGroup(masuk,'Pemasukan') + renderGroup(keluar,'Pengeluaran');
 }
 
-function getKategoriIcons() {
-  const map = {};
-  allKategori.forEach(k => { map[k.nama] = { ikon: k.ikon, warna: k.warna }; });
-  return map;
-}
-
-// async function tambahKategori() {
-//   const nama     = document.getElementById('kat-nama').value.trim();
-//   const tipe     = document.getElementById('kat-tipe').value;
-//   const ikon     = document.getElementById('kat-ikon').value.trim() || '📌';
-//   const warna    = document.getElementById('kat-warna').value;
-//   const anggaran = document.getElementById('kat-anggaran').value || 0;
-
-//   if (!nama) { showToast('Nama kategori harus diisi.', 'error'); return; }
-
-//   try {
-//     const res = await apiPost({ action:'addCategory', nama, tipe, ikon, warna, anggaran });
-//     if (res.error) { showToast(res.error, 'error'); return; }
-//     showToast('✅ Kategori berhasil ditambahkan!', 'success');
-//     document.getElementById('kat-nama').value = '';
-//     document.getElementById('kat-ikon').value = '';
-//     document.getElementById('kat-anggaran').value = '';
-//     loadKategori();
-//   } catch(e) { showToast('Gagal menambah kategori.', 'error'); }
-// }
-
 //batas perubahan
-
-// Baru
-// async function tambahKategori() {
-//   const nama     = document.getElementById('kat-nama').value.trim();
-//   const tipe     = document.getElementById('kat-tipe').value;
-//   const ikon     = document.getElementById('kat-ikon').value.trim() || '📌';
-//   const warna    = document.getElementById('kat-warna').value;
-//   const anggaran = document.getElementById('kat-anggaran').value || 0;
-
-//   if (!nama) {
-//     showToast('Nama kategori harus diisi.', 'error');
-//     return;
-//   }
-
-//   try {
-
-//     const res = await apiPost({
-//       action:'addCategory',
-//       nama,
-//       tipe,
-//       ikon,
-//       warna,
-//       anggaran
-//     });
-
-//     console.log("Response:", res);
-
-//     if (res.error) {
-//       showToast(res.error,'error');
-//       return;
-//     }
-
-//     showToast('Kategori berhasil ditambahkan!','success');
-
-//     loadKategori();
-
-//   } catch(e) {
-
-//     console.error(e);
-
-//     alert(
-//       'ERROR ASLI:\\n\\n' +
-//       e.message
-//     );
-
 //     showToast(
 //       'Gagal menambah kategori.',
 //       'error'
@@ -1164,43 +1099,29 @@ function getKategoriIcons() {
 // }
 
 
-async function tambahKategori(categoryData) {
-    showLoading(true);
-    try {
-        // Menggunakan trik text/plain untuk menghindari preflight CORS pada POST request
-        const response = await fetch(API_URL, {
-            method: 'POST', 
-            headers: {
-                'Content-Type': 'text/plain;charset=utf-8'
-            },
-            body: JSON.stringify({
-                action: 'addCategory',
-                ...categoryData
-            })
-        });
+async function tambahKategori() {
+  const nama     = document.getElementById('kat-nama').value.trim();
+  const tipe     = document.getElementById('kat-tipe').value;
+  const ikon     = document.getElementById('kat-ikon').value.trim() || '📌';
+  const warna    = document.getElementById('kat-warna').value;
+  const anggaran = document.getElementById('kat-anggaran').value || 0;
 
-        if (!response.ok) throw new Error('Network response was not ok');
-        
-        const result = await response.json();
-        
-        if (result.success) {
-            showAlert('Kategori berhasil ditambahkan!', 'success');
-            // Reset form dan tutup modal
-            document.getElementById('formKategori').reset();
-            const modal = bootstrap.Modal.getInstance(document.getElementById('modalKategori'));
-            if (modal) modal.hide();
-            
-            // Refresh data halaman
-            await initApp(); 
-        } else {
-            throw new Error(result.error || 'Gagal menambahkan kategori');
-        }
-    } catch (error) {
-        console.error('Error adding category:', error);
-        showAlert('Gagal menambahkan kategori: ' + error.message, 'danger');
-    } finally {
-        showLoading(false);
-    }
+  if (!nama) {
+    showToast('Nama kategori harus diisi.', 'error');
+    return;
+  }
+
+  try {
+    const res = await apiPost({ action:'addCategory', nama, tipe, ikon, warna, anggaran });
+    if (res.error) { showToast(res.error, 'error'); return; }
+    showToast('✅ Kategori berhasil ditambahkan!', 'success');
+    document.getElementById('kat-nama').value = '';
+    document.getElementById('kat-ikon').value = '';
+    document.getElementById('kat-anggaran').value = '';
+    loadKategori();
+  } catch(e) {
+    showToast('Gagal menambah kategori.', 'error');
+  }
 }
 
 async function initKategoriDefault() {
