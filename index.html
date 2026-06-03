@@ -411,8 +411,9 @@ tbody tr:hover td{background:var(--bg3)}
       <button class="nav-item" onclick="showView('ringkasan',this)">
         <span class="icon">📈</span> Ringkasan Bulanan
       </button>
-      <button class="nav-item" onclick="showView('settings',this)">
-        <span class="icon">⚙️</span> Pengaturan Sistem
+      <button class="nav-item" id="nav-settings" onclick="showView('settings',this)">
+        <span class="icon">⚙️</span> Pengaturan
+        <span class="nav-badge" id="badge-settings" style="background:rgba(245,158,11,.15);color:var(--amber);display:none">!</span>
       </button>
     </div>
     <div class="sidebar-footer">
@@ -606,13 +607,7 @@ tbody tr:hover td{background:var(--bg3)}
             </div>
           </div>
           <div style="display:flex;gap:10px;margin-top:8px">
-            <button class="btn btn-primary" onclick="tambahKategori({
-              nama: document.getElementById('kat-nama').value.trim(),
-              tipe: document.getElementById('kat-tipe').value,
-              ikon: document.getElementById('kat-ikon').value.trim() || '📌',
-              warna: document.getElementById('kat-warna').value,
-              anggaran: document.getElementById('kat-anggaran').value || 0
-            })">➕ Tambah Kategori</button>
+            <button class="btn btn-primary" onclick="tambahKategori()">➕ Tambah Kategori</button>
             <button class="btn btn-secondary" onclick="initKategoriDefault()">⚡ Init Kategori Default</button>
           </div>
         </div>
@@ -641,32 +636,52 @@ tbody tr:hover td{background:var(--bg3)}
       </div>
     </div>
 
-  
-    <!-- ── SETTINGS ── -->
+    <!-- ── PENGATURAN ── -->
     <div class="view" id="view-settings">
       <div class="page-header">
-        <h2>Pengaturan Sistem</h2>
-        <p>Kelola konfigurasi aplikasi</p>
+        <h2>Pengaturan</h2>
+        <p>Konfigurasi koneksi aplikasi ke Google Sheets</p>
+      </div>
+      <div class="form-card" style="max-width:600px">
+        <div class="form-title">🔗 Google Apps Script URL</div>
+        <p style="font-size:13px;color:var(--text2);margin-bottom:20px;line-height:1.7">
+          URL ini didapat setelah Anda <strong>deploy Apps Script sebagai Web App</strong>.<br>
+          Setiap kali Anda deploy versi baru, URL bisa berubah — update di sini.
+        </p>
+        <div class="form-group" style="margin-bottom:16px">
+          <label class="form-label">URL Saat Ini</label>
+          <div id="current-url-display" style="font-family:var(--mono);font-size:11px;color:var(--text2);background:var(--bg3);padding:10px 12px;border-radius:var(--radius-sm);border:1px solid var(--border);word-break:break-all">
+            Belum diatur
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom:20px">
+          <label class="form-label">Update URL Baru</label>
+          <input class="form-input" id="settings-url" placeholder="https://script.google.com/macros/s/..." style="font-family:var(--mono);font-size:12px"/>
+          <span style="font-size:11px;color:var(--text3);margin-top:4px;display:block">
+            Contoh: https://script.google.com/macros/s/AKfyc.../exec
+          </span>
+        </div>
+        <div style="display:flex;gap:10px">
+          <button class="btn btn-primary" onclick="saveSettingsUrl()">💾 Simpan URL</button>
+          <button class="btn btn-secondary" onclick="testKoneksi()">🔌 Test Koneksi</button>
+          <button class="btn btn-secondary" style="color:var(--red);margin-left:auto" onclick="clearConfig()">🗑 Hapus URL</button>
+        </div>
+        <div id="test-result" style="margin-top:16px;display:none"></div>
       </div>
 
-      <div class="form-card">
-        <div class="form-title">Google Apps Script Deployment</div>
-
-        <div class="form-group" style="margin-bottom:16px">
-          <label class="form-label">URL Deployment Apps Script</label>
-          <input type="text" class="form-input" id="settings-script-url"
-          placeholder="https://script.google.com/macros/s/..."/>
-        </div>
-
-        <div style="display:flex;gap:10px;flex-wrap:wrap">
-          <button class="btn btn-primary" onclick="saveSettingsUrl()">💾 Simpan URL</button>
-          <button class="btn btn-secondary" onclick="testConnection()">🔗 Test Koneksi</button>
-          <button class="btn btn-secondary" onclick="resetSettingsUrl()">🗑 Hapus URL</button>
+      <div class="form-card" style="max-width:600px;margin-top:16px">
+        <div class="form-title">ℹ️ Cara Mendapatkan URL Baru</div>
+        <div style="font-size:13px;color:var(--text2);line-height:2">
+          <div>1. Buka <strong style="color:var(--text)">Google Apps Script</strong> → Extensions → Apps Script</div>
+          <div>2. Klik <strong style="color:var(--text)">Deploy → Manage deployments</strong></div>
+          <div>3. Klik ✏️ edit → pilih <strong style="color:var(--text)">New version</strong></div>
+          <div>4. Klik <strong style="color:var(--text)">Deploy</strong> → copy URL yang muncul</div>
+          <div>5. Paste di kolom "Update URL Baru" di atas → Simpan</div>
         </div>
       </div>
     </div>
 
-</main>
+  </main>
 </div>
 
 <!-- Toast -->
@@ -689,10 +704,11 @@ document.addEventListener('DOMContentLoaded', () => {
   // Check config
   if (SCRIPT_URL) {
     document.getElementById('config-banner').classList.add('hidden');
-    document.getElementById('sidebar-url-display').textContent = SCRIPT_URL.slice(0,40)+'...';
+    updateUrlDisplay(SCRIPT_URL);
     loadDashboard();
     loadKategori();
   } else {
+    updateUrlDisplay('');
     document.getElementById('config-url').focus();
   }
 });
@@ -707,10 +723,70 @@ function saveConfig() {
   SCRIPT_URL = url;
   localStorage.setItem('cashflow_script_url', url);
   document.getElementById('config-banner').classList.add('hidden');
-  document.getElementById('sidebar-url-display').textContent = url.slice(0,40)+'...';
-  showToast('URL berhasil disimpan!', 'success');
+  updateUrlDisplay(url);
+  showToast('URL berhasil disimpan! ✅', 'success');
   loadDashboard();
   loadKategori();
+}
+
+function updateUrlDisplay(url) {
+  const short = url ? url.slice(0,55) + (url.length > 55 ? '...' : '') : 'Belum diatur';
+  document.getElementById('sidebar-url-display').textContent = short;
+  const cur = document.getElementById('current-url-display');
+  if (cur) cur.textContent = url || 'Belum diatur';
+  // Show warning badge if no URL
+  const badge = document.getElementById('badge-settings');
+  if (badge) badge.style.display = url ? 'none' : 'inline-flex';
+}
+
+function loadSettingsPage() {
+  updateUrlDisplay(SCRIPT_URL);
+  const inp = document.getElementById('settings-url');
+  if (inp) inp.value = SCRIPT_URL || '';
+  document.getElementById('test-result').style.display = 'none';
+}
+
+function saveSettingsUrl() {
+  const url = document.getElementById('settings-url').value.trim();
+  if (!url) { showToast('URL tidak boleh kosong.', 'error'); return; }
+  if (!url.startsWith('https://script.google.com')) {
+    showToast('Format URL tidak valid. Harus dari script.google.com', 'error');
+    return;
+  }
+  SCRIPT_URL = url;
+  localStorage.setItem('cashflow_script_url', url);
+  document.getElementById('config-banner').classList.add('hidden');
+  updateUrlDisplay(url);
+  showToast('URL berhasil diperbarui! ✅', 'success');
+  loadDashboard();
+  loadKategori();
+}
+
+async function testKoneksi() {
+  const resultEl = document.getElementById('test-result');
+  resultEl.style.display = 'block';
+  resultEl.innerHTML = '<div class="loading" style="padding:12px"><div class="spinner"></div>Menguji koneksi...</div>';
+  try {
+    const data = await api('getDashboard');
+    if (data.error) {
+      resultEl.innerHTML = `<div style="background:rgba(244,63,94,.1);border:1px solid rgba(244,63,94,.2);border-radius:var(--radius-sm);padding:12px;font-size:13px;color:var(--red)">❌ Error: ${data.error}</div>`;
+    } else {
+      resultEl.innerHTML = `<div style="background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.2);border-radius:var(--radius-sm);padding:12px;font-size:13px;color:var(--green)">✅ Koneksi berhasil! Spreadsheet terhubung dengan ${data.totalTransaksi} transaksi.</div>`;
+    }
+  } catch(e) {
+    resultEl.innerHTML = `<div style="background:rgba(244,63,94,.1);border:1px solid rgba(244,63,94,.2);border-radius:var(--radius-sm);padding:12px;font-size:13px;color:var(--red)">❌ Gagal terhubung. Periksa URL dan pastikan Web App sudah di-deploy dengan akses "Anyone".</div>`;
+  }
+}
+
+function clearConfig() {
+  if (!confirm('Hapus URL yang tersimpan?')) return;
+  SCRIPT_URL = '';
+  localStorage.removeItem('cashflow_script_url');
+  document.getElementById('settings-url').value = '';
+  document.getElementById('config-banner').classList.remove('hidden');
+  updateUrlDisplay('');
+  showToast('URL dihapus.', 'info');
+}
 }
 
 // ── API Call ──────────────────────────────────────
@@ -1090,14 +1166,11 @@ function renderKategoriList(list) {
   container.innerHTML = renderGroup(masuk,'Pemasukan') + renderGroup(keluar,'Pengeluaran');
 }
 
-//batas perubahan
-//     showToast(
-//       'Gagal menambah kategori.',
-//       'error'
-//     );
-//   }
-// }
-
+function getKategoriIcons() {
+  const map = {};
+  allKategori.forEach(k => { map[k.nama] = { ikon: k.ikon, warna: k.warna }; });
+  return map;
+}
 
 async function tambahKategori() {
   const nama     = document.getElementById('kat-nama').value.trim();
@@ -1106,10 +1179,7 @@ async function tambahKategori() {
   const warna    = document.getElementById('kat-warna').value;
   const anggaran = document.getElementById('kat-anggaran').value || 0;
 
-  if (!nama) {
-    showToast('Nama kategori harus diisi.', 'error');
-    return;
-  }
+  if (!nama) { showToast('Nama kategori harus diisi.', 'error'); return; }
 
   try {
     const res = await apiPost({ action:'addCategory', nama, tipe, ikon, warna, anggaran });
@@ -1119,9 +1189,7 @@ async function tambahKategori() {
     document.getElementById('kat-ikon').value = '';
     document.getElementById('kat-anggaran').value = '';
     loadKategori();
-  } catch(e) {
-    showToast('Gagal menambah kategori.', 'error');
-  }
+  } catch(e) { showToast('Gagal menambah kategori.', 'error'); }
 }
 
 async function initKategoriDefault() {
@@ -1159,65 +1227,6 @@ async function loadRingkasan() {
     container.innerHTML = '<div class="empty"><div class="empty-icon">⚠️</div><p>Gagal memuat ringkasan.</p></div>';
   }
 }
-
-
-// ── Settings ─────────────────────────────────────
-function loadSettingsPage() {
-  const el = document.getElementById('settings-script-url');
-  if(el) el.value = localStorage.getItem('cashflow_script_url') || '';
-}
-
-function saveSettingsUrl() {
-  const url = document.getElementById('settings-script-url').value.trim();
-
-  if (!url.startsWith('https://script.google.com')) {
-    showToast('URL Apps Script tidak valid.', 'error');
-    return;
-  }
-
-  SCRIPT_URL = url;
-  localStorage.setItem('cashflow_script_url', url);
-
-  document.getElementById('sidebar-url-display').textContent =
-    url.length > 40 ? url.substring(0,40)+'...' : url;
-
-  showToast('URL deployment berhasil disimpan.', 'success');
-}
-
-function resetSettingsUrl() {
-  if (!confirm('Hapus URL deployment?')) return;
-
-  localStorage.removeItem('cashflow_script_url');
-  SCRIPT_URL = '';
-
-  document.getElementById('settings-script-url').value = '';
-  document.getElementById('sidebar-url-display').textContent =
-    'Script URL belum diatur';
-
-  showToast('URL deployment berhasil dihapus.', 'info');
-}
-
-async function testConnection() {
-  const url = document.getElementById('settings-script-url').value.trim();
-
-  if (!url) {
-    showToast('Masukkan URL terlebih dahulu.', 'error');
-    return;
-  }
-
-  try {
-    const response = await fetch(url + '?action=getDashboard');
-
-    if (response.ok) {
-      showToast('Koneksi berhasil.', 'success');
-    } else {
-      showToast('URL ditemukan tetapi tidak merespons dengan benar.', 'error');
-    }
-  } catch (e) {
-    showToast('Gagal terhubung ke Apps Script.', 'error');
-  }
-}
-
 
 // ── Toast ─────────────────────────────────────────
 let toastTimer;
