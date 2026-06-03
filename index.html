@@ -788,22 +788,35 @@ function clearConfig() {
   showToast('URL dihapus.', 'info');
 }
 
-
 // ── API Call ──────────────────────────────────────
 async function api(action, params = {}) {
   if (!SCRIPT_URL) { showToast('Masukkan URL Apps Script terlebih dahulu.', 'error'); throw new Error('No URL'); }
   const url = `${SCRIPT_URL}?action=${action}&${new URLSearchParams(params)}`;
   const res  = await fetch(url);
-  return res.json();
+  const text = await res.text();
+  try {
+    return JSON.parse(text);
+  } catch(e) {
+    console.error('Response bukan JSON:', text);
+    return { error: 'Respons tidak valid dari server' };
+  }
 }
 
 async function apiPost(body) {
   if (!SCRIPT_URL) { showToast('Masukkan URL Apps Script terlebih dahulu.', 'error'); throw new Error('No URL'); }
+  // Gunakan text/plain untuk hindari CORS preflight di Google Apps Script
   const res = await fetch(SCRIPT_URL, {
-    method:'POST', headers:{'Content-Type':'application/json'},
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
     body: JSON.stringify(body)
   });
-  return res.json();
+  const text = await res.text();
+  try {
+    return JSON.parse(text);
+  } catch(e) {
+    console.error('Response bukan JSON:', text);
+    return { error: 'Respons tidak valid dari server: ' + text.slice(0, 100) };
+  }
 }
 
 // ── Format Rupiah ─────────────────────────────────
