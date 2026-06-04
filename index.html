@@ -187,7 +187,7 @@ tbody tr:hover td{background:var(--bg3)}
 
 /* Hamburger */
 .hamburger{display:none;position:fixed;top:16px;left:16px;z-index:100000;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px;cursor:pointer;font-size:18px;line-height:1}
-.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9998}
+.overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:9998}
 
 /* Mobile */
 @media(max-width:768px){
@@ -195,7 +195,7 @@ tbody tr:hover td{background:var(--bg3)}
   .sidebar.open{transform:translateX(0)}
   .main{margin-left:0;padding:20px 16px;padding-top:60px}
   .hamburger{display:block}
-  .overlay.show{display:block}
+  .overlay.show{display:block;left:240px}
   .stats-grid{grid-template-columns:1fr;gap:10px}
   .dash-grid{grid-template-columns:1fr}
   .form-row{grid-template-columns:1fr}
@@ -609,8 +609,14 @@ function showView(name, btn) {
 }
 
 function toggleSidebar() {
-  document.getElementById('sidebar').classList.toggle('open');
-  document.getElementById('overlay').classList.toggle('show');
+  var sidebar = document.getElementById('sidebar');
+  var overlay = document.getElementById('overlay');
+  var isOpen  = sidebar.classList.toggle('open');
+  if (isOpen) {
+    overlay.classList.add('show');
+  } else {
+    overlay.classList.remove('show');
+  }
 }
 
 function closeSidebar() {
