@@ -408,6 +408,44 @@ tbody tr:hover td{background:var(--bg3)}
           <div>4. Copy URL → paste di kolom Update URL di atas → Simpan</div>
         </div>
       </div>
+
+      <!-- Card Install PWA -->
+      <div class="form-card" style="max-width:600px;margin-top:16px">
+        <div class="form-title">📲 Install Aplikasi</div>
+        <p style="font-size:13px;color:var(--text2);margin-bottom:20px;line-height:1.7">
+          Install Cashflow ke homescreen agar bisa dibuka seperti aplikasi biasa, tanpa browser.
+        </p>
+
+        <!-- Status PWA -->
+        <div id="pwa-status-card" style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;margin-bottom:16px;display:flex;align-items:center;gap:12px">
+          <div id="pwa-status-icon" style="font-size:24px">⏳</div>
+          <div>
+            <div id="pwa-status-title" style="font-size:13px;font-weight:600;color:var(--text)">Mengecek status...</div>
+            <div id="pwa-status-desc"  style="font-size:11px;color:var(--text2);margin-top:2px">Silakan tunggu</div>
+          </div>
+        </div>
+
+        <!-- Tombol install -->
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <button class="btn btn-primary" id="btn-install-pwa" onclick="triggerInstall()" style="display:none">
+            ⬇️ Install Sekarang
+          </button>
+          <button class="btn btn-secondary" id="btn-check-pwa" onclick="checkPWAStatus()">
+            🔍 Cek Ulang
+          </button>
+        </div>
+
+        <!-- Panduan manual -->
+        <div id="pwa-manual-guide" style="display:none;margin-top:16px;background:rgba(99,102,241,.06);border:1px solid rgba(99,102,241,.15);border-radius:var(--radius-sm);padding:14px">
+          <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:10px">📖 Cara install manual di Chrome Android:</div>
+          <div style="font-size:12px;color:var(--text2);line-height:2.2">
+            <div>1. Tap ikon <strong style="color:var(--text)">⋮ (tiga titik)</strong> di pojok kanan Chrome</div>
+            <div>2. Pilih <strong style="color:var(--text)">"Install app"</strong> atau <strong style="color:var(--text)">"Add to Home screen"</strong></div>
+            <div>3. Tap <strong style="color:var(--text)">Install</strong> pada dialog konfirmasi</div>
+            <div style="margin-top:8px;color:var(--amber)">⚠️ Pastikan semua file icons/ sudah ter-upload di Vercel</div>
+          </div>
+        </div>
+      </div>
     </div>
   </main>
 </div>
@@ -630,6 +668,8 @@ function loadSettingsPage() {
   if (inp) inp.value = SCRIPT_URL || '';
   var r = document.getElementById('test-result');
   if (r) r.style.display = 'none';
+  // Update status PWA setiap buka halaman pengaturan
+  setTimeout(checkPWAStatus, 100);
 }
 
 // ── Navigation ────────────────────────────────────
@@ -1128,7 +1168,68 @@ function dismissBanner() {
 window.addEventListener('appinstalled', function() {
   showToast('✅ Cashflow berhasil diinstall di perangkat Anda!', 'success');
   deferredPrompt = null;
+  checkPWAStatus();
 });
+
+// ── PWA Status & Trigger ─────────────────────────
+function triggerInstall() {
+  if (!deferredPrompt) {
+    showToast('Prompt install tidak tersedia. Coba lewat menu Chrome: ⋮ → Install app', 'info');
+    return;
+  }
+  deferredPrompt.prompt();
+  deferredPrompt.userChoice.then(function(result) {
+    if (result.outcome === 'accepted') {
+      showToast('✅ Cashflow berhasil diinstall!', 'success');
+    } else {
+      showToast('Install dibatalkan.', 'info');
+    }
+    deferredPrompt = null;
+    checkPWAStatus();
+  });
+}
+
+function checkPWAStatus() {
+  var statusIcon  = document.getElementById('pwa-status-icon');
+  var statusTitle = document.getElementById('pwa-status-title');
+  var statusDesc  = document.getElementById('pwa-status-desc');
+  var btnInstall  = document.getElementById('btn-install-pwa');
+  var manualGuide = document.getElementById('pwa-manual-guide');
+  if (!statusIcon) return;
+
+  // Cek apakah sudah running sebagai PWA standalone
+  var isStandalone = window.matchMedia('(display-mode: standalone)').matches
+                  || window.navigator.standalone === true;
+
+  if (isStandalone) {
+    // Sudah terinstall dan dibuka sebagai app
+    statusIcon.textContent  = '✅';
+    statusTitle.textContent = 'Aplikasi sudah terinstall';
+    statusDesc.textContent  = 'Cashflow berjalan sebagai aplikasi native';
+    document.getElementById('pwa-status-card').style.borderColor = 'rgba(16,185,129,.3)';
+    document.getElementById('pwa-status-card').style.background  = 'rgba(16,185,129,.06)';
+    if (btnInstall)  btnInstall.style.display  = 'none';
+    if (manualGuide) manualGuide.style.display = 'none';
+  } else if (deferredPrompt) {
+    // Siap diinstall - ada prompt tersedia
+    statusIcon.textContent  = '📲';
+    statusTitle.textContent = 'Siap diinstall!';
+    statusDesc.textContent  = 'Tap tombol di bawah untuk install ke homescreen';
+    document.getElementById('pwa-status-card').style.borderColor = 'rgba(99,102,241,.3)';
+    document.getElementById('pwa-status-card').style.background  = 'rgba(99,102,241,.06)';
+    if (btnInstall)  btnInstall.style.display  = 'inline-flex';
+    if (manualGuide) manualGuide.style.display = 'none';
+  } else {
+    // Belum bisa install otomatis - tampilkan panduan manual
+    statusIcon.textContent  = '📖';
+    statusTitle.textContent = 'Install via menu Chrome';
+    statusDesc.textContent  = 'Gunakan panduan di bawah untuk install manual';
+    document.getElementById('pwa-status-card').style.borderColor = 'rgba(245,158,11,.2)';
+    document.getElementById('pwa-status-card').style.background  = 'rgba(245,158,11,.05)';
+    if (btnInstall)  btnInstall.style.display  = 'none';
+    if (manualGuide) manualGuide.style.display = 'block';
+  }
+}
 </script>
 </body>
 </html>
