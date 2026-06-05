@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8"/>
+<title>Cashflow — PWA Icon Generator</title>
+<style>
+  body{font-family:system-ui,sans-serif;background:#0c0f1a;color:#e8eaf6;padding:32px;max-width:640px;margin:0 auto}
+  h1{font-size:20px;margin-bottom:8px}
+  p{font-size:14px;color:#8892b0;margin-bottom:24px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;margin-bottom:24px}
+  .icon-card{background:#131729;border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:16px;text-align:center}
+  .icon-card canvas{border-radius:18px;display:block;margin:0 auto 8px}
+  .icon-card p{font-size:11px;color:#8892b0;margin:0}
+  .btn{display:inline-block;background:#6366f1;color:#fff;padding:10px 24px;border-radius:8px;border:none;cursor:pointer;font-size:14px;font-weight:600;margin-right:8px;margin-bottom:8px}
+  .btn:hover{background:#818cf8}
+  .btn-secondary{background:#1a1f35;border:1px solid rgba(255,255,255,.1)}
+  .btn-secondary:hover{background:#212843}
+  .status{font-size:13px;color:#10b981;margin-top:12px;display:none}
+  .instructions{background:#131729;border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:20px;margin-top:24px;font-size:13px;line-height:2;color:#8892b0}
+  .instructions strong{color:#e8eaf6}
+  code{background:#0c0f1a;padding:2px 6px;border-radius:4px;font-family:monospace;font-size:12px;color:#6366f1}
+</style>
+</head>
+<body>
+
+<h1>💸 PWA Icon Generator</h1>
+<p>Klik "Generate & Download Semua Icon" untuk membuat semua ukuran icon yang dibutuhkan PWA secara otomatis.</p>
+
+<div class="grid" id="preview-grid"></div>
+
+<button class="btn" onclick="downloadAll()">⬇️ Generate & Download Semua Icon</button>
+<button class="btn btn-secondary" onclick="previewOnly()">👁 Preview Saja</button>
+<div class="status" id="status">✅ Semua icon berhasil di-download!</div>
+
+<div class="instructions">
+  <strong>Cara pakai setelah download:</strong><br>
+  1. Buat folder bernama <code>icons</code> di repository GitHub Anda<br>
+  2. Upload semua file <code>icon-*.png</code> yang di-download ke folder <code>icons/</code><br>
+  3. Struktur folder Anda akan menjadi:<br>
+  <code>cashflow-app/</code><br>
+  <code>&nbsp;&nbsp;├── index.html</code><br>
+  <code>&nbsp;&nbsp;├── manifest.json</code><br>
+  <code>&nbsp;&nbsp;├── sw.js</code><br>
+  <code>&nbsp;&nbsp;└── icons/</code><br>
+  <code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├── icon-192.png</code><br>
+  <code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└── icon-512.png (dan lainnya)</code>
+</div>
+
+<script>
+var SIZES = [72, 96, 128, 144, 152, 180, 192, 384, 512];
+var BG_COLOR    = '#0c0f1a';
+var ACCENT      = '#6366f1';
+var EMOJI       = '💸';
+
+function drawIcon(size) {
+  var canvas  = document.createElement('canvas');
+  canvas.width  = size;
+  canvas.height = size;
+  var ctx = canvas.getContext('2d');
+
+  // Background rounded rect
+  var r = size * 0.22;
+  ctx.fillStyle = BG_COLOR;
+  ctx.beginPath();
+  ctx.moveTo(r, 0);
+  ctx.lineTo(size - r, 0);
+  ctx.quadraticCurveTo(size, 0, size, r);
+  ctx.lineTo(size, size - r);
+  ctx.quadraticCurveTo(size, size, size - r, size);
+  ctx.lineTo(r, size);
+  ctx.quadraticCurveTo(0, size, 0, size - r);
+  ctx.lineTo(0, r);
+  ctx.quadraticCurveTo(0, 0, r, 0);
+  ctx.closePath();
+  ctx.fill();
+
+  // Accent circle glow
+  var grad = ctx.createRadialGradient(size/2, size/2, 0, size/2, size/2, size*0.45);
+  grad.addColorStop(0, 'rgba(99,102,241,0.3)');
+  grad.addColorStop(1, 'rgba(99,102,241,0)');
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.arc(size/2, size/2, size*0.45, 0, Math.PI*2);
+  ctx.fill();
+
+  // Emoji
+  var fontSize = Math.floor(size * 0.52);
+  ctx.font = fontSize + 'px serif';
+  ctx.textAlign    = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(EMOJI, size/2, size/2 + size*0.02);
+
+  return canvas;
+}
+
+function previewOnly() {
+  var grid = document.getElementById('preview-grid');
+  grid.innerHTML = '';
+  SIZES.forEach(function(size) {
+    var canvas = drawIcon(size);
+    var previewSize = Math.min(size, 80);
+    canvas.style.width  = previewSize + 'px';
+    canvas.style.height = previewSize + 'px';
+
+    var card = document.createElement('div');
+    card.className = 'icon-card';
+    var label = document.createElement('p');
+    label.textContent = size + 'x' + size;
+    card.appendChild(canvas);
+    card.appendChild(label);
+    grid.appendChild(card);
+  });
+}
+
+function downloadAll() {
+  previewOnly();
+  var count = 0;
+  SIZES.forEach(function(size, i) {
+    setTimeout(function() {
+      var canvas = drawIcon(size);
+      var link   = document.createElement('a');
+      link.download = 'icon-' + size + '.png';
+      link.href  = canvas.toDataURL('image/png');
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      count++;
+      if (count === SIZES.length) {
+        var status = document.getElementById('status');
+        status.style.display = 'block';
+        setTimeout(function(){ status.style.display='none'; }, 4000);
+      }
+    }, i * 200);
+  });
+}
+
+// Auto preview on load
+window.onload = previewOnly;
+</script>
+</body>
+</html>
